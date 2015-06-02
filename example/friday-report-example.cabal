@@ -1,0 +1,24 @@
+name:                friday-report-example
+version:             0.1.0.0
+synopsis:            An image processing example for the friday-report
+
+homepage:            https://github.com/RaphaelJ/friday-report
+
+author:              Raphael Javaux
+maintainer:          raphaeljavaux@gmail.com
+
+category:            Graphics
+build-type:          Simple
+
+cabal-version:       >=1.10
+
+extra-source-files:  image.jpg
+
+executable      example
+    main-is:            Main.hs
+    ghc-options:        -Wall -O2 -rtsopts -threaded -with-rtsopts=-N
+    default-language:   Haskell2010
+
+    build-depends:      base                    >= 4            && < 5
+                      , friday                  >= 0.2.2        && < 0.3
+                      , friday-devil            >= 0.1          && < 0.2
