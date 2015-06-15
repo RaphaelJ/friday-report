@@ -5,11 +5,11 @@ import Prelude hiding (map)
 import System.Environment (getArgs)
 
 import Vision.Image (
-     Grey, GreyDelayed, RGB, InterpolMethod (Bilinear)
-    , convert, compute, computeP, delayed, shape, resize
+     RGB, InterpolMethod (Bilinear)
+    , compute, computeP, crop, delayed, shape, resize
     )
 import Vision.Image.Storage.DevIL (Autodetect (..), load, save)
-import Vision.Primitive (Z (..), (:.) (..), ix2)
+import Vision.Primitive (Z (..), (:.) (..), Rect (..), ix2)
 
 -- Reads an image from a file, applies a composition of transformations to
 -- create a centred and squared miniature and then writes the result to a file:
@@ -30,14 +30,24 @@ main = do
             let -- Gets the size of the image.
                 Z :. h :. w = shape input
 
-                -- Gets a grey scale delayed image from the input image.
-                grey :: GreyDelayed
-                grey    = delayed (convert input)
+                -- Creates a Rect object which will be used to define how we
+                -- will crop our image. The rectangle is centered on the largest
+                -- side of the image.
+                rect | w > h     = Rect ((w - h) `quot` 2) 0 h h
+                     | otherwise = Rect 0 ((h - w) `quot` 2) w w
 
-                resized = delayed (resize Bilinear (ix2 (h * 2) (w * 2)) grey)
+                -- Crops the image. Doesn't compute the image into a "real"
+                -- image: by using a delayed representation, this intermediate
+                -- image will not exist in the computer memory as a large array.
+                cropped = delayed (crop rect input)
 
---             let output = compute resized :: Grey
-            output <- computeP resized :: IO Grey
+                -- Resizes the image. By using the delayed representation of the
+                -- cropped image, our compiler should be able to fuse these two
+                -- transformations into a single loop.
+                resized = delayed (resize Bilinear (ix2 1000 1000) cropped)
+
+--             let output = compute resized :: RGB
+            output <- computeP resized :: IO RGB
 
             mErr <- save Autodetect outputPath output
             case mErr of
@@ -46,4 +56,3 @@ main = do
                 Just err -> do
                     putStrLn "Unable to save the image:"
                     print err
-
